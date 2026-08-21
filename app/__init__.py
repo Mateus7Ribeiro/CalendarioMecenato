@@ -31,8 +31,10 @@ def create_app(config_class=Config):
 
     with app.app_context():
         from app.models import Club, Event, User
-        db.create_all()
-        _seed_demo_data(User, Club, Event)
+        if app.config["AUTO_CREATE_DB"]:
+            db.create_all()
+        if app.config["SEED_DEMO_DATA"]:
+            _seed_demo_data(User, Club, Event)
 
     return app
 

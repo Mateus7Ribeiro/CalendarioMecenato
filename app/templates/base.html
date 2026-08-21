@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mecenato{% endblock %} · Calendário de leitura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="{{ url_for('main.calendar') }}"><span class="brand-mark">M</span><span>Mecenato<span class="dot">.</span></span></a><nav>{% if current_user.is_authenticated %}<span class="user-chip">{{ current_user.name }}</span>{% if current_user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">Administração</a>{% endif %}<form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-button">Sair</button></form>{% else %}<a href="{{ url_for('auth.login') }}">Entrar</a><a class="nav-cta" href="{{ url_for('auth.register') }}">Criar conta</a>{% endif %}</nav></header>
+  <main class="page-shell">{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}{% block content %}{% endblock %}</main>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

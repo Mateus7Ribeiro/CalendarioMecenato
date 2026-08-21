@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Mecenato{% endblock %}
+{% block content %}
+<section class="page-heading"><div><div class="eyebrow">Temporada de leituras · 2026</div><h1>Encontros que ficam.</h1></div><a class="button-primary" href="{{ url_for('auth.register') }}">Participar do clube</a></section>
+<div class="calendar-layout"><section>
+  <div class="calendar-head"><h2>{{ month_label }} {{ year }}</h2><div class="month-switch"><a href="?month={{ previous_month }}" aria-label="Mês anterior">‹</a><a href="?month={{ selected }}">Hoje</a><a href="?month={{ next_month }}" aria-label="Próximo mês">›</a></div></div>
+  <div class="calendar-grid"><div class="weekday">Dom</div><div class="weekday">Seg</div><div class="weekday">Ter</div><div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div><div class="weekday">Sáb</div>
+    {% set first_weekday = (month_start.weekday() + 1) % 7 %}{% for _ in range(first_weekday) %}<div class="day"></div>{% endfor %}{% for day in range(1, days_in_month + 1) %}<div class="day {% if day == now.day and year == now.year and now.month == month_start.month %}today{% endif %}"><span class="day-number">{{ day }}</span>{% for event in event_days.get(day, []) %}<a class="event-mini" href="{{ url_for('main.event_detail', event_id=event.id) }}" style="--club-color:{{ event.club.color_tag }}"><strong>{{ event.book_title }}</strong><small>{{ event.event_date.strftime('%H:%M') }} · {{ event.club.name }}</small></a>{% endfor %}</div>{% endfor %}
+  </div>
+</section><aside class="side-panel"><h3>Próximos encontros</h3><div class="upcoming">{% for event in upcoming %}<a class="upcoming-card" href="{{ url_for('main.event_detail', event_id=event.id) }}"><img src="{{ event.cover_url or 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200&q=80' }}" alt="Capa de {{ event.book_title }}"><div><div class="date-label">{{ event.event_date.strftime('%d %b · %H:%M') }}</div><h4>{{ event.book_title }}</h4><p>{{ event.club.name }} · {{ event.location_type == 'online' and 'Online' or 'Presencial' }}</p></div></a>{% else %}<p class="muted">Nenhum encontro futuro cadastrado.</p>{% endfor %}</div></aside></div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.book_title }}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <img class="detail-cover" src="{{ event.cover_url or 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=500&q=80' }}" alt="Capa de {{ event.book_title }}">
+  <article class="detail">
+    <div class="eyebrow">{{ event.club.name }} · {{ event.event_date.strftime('%d/%m/%Y às %H:%M') }}</div>
+    <h1>{{ event.book_title }}</h1>
+    <p class="muted">{{ event.book_author }}</p>
+    <div class="meta-row"><span class="tag">{{ event.location_type == 'online' and 'Online' or 'Presencial' }}</span><span class="tag">{{ event.location_details }}</span></div>
+    <p>{{ event.synopsis or 'Uma conversa aberta sobre a leitura do mês.' }}</p>
+    {% if event.show_rsvp_publicly %}<p class="muted">✔ {{ event.attending_count }} confirmados · ✖ {{ event.declining_count }} não vão</p>{% endif %}
+    {% if current_user.is_authenticated %}
+    <form class="rsvp-actions" method="post" action="{{ url_for('main.rsvp', event_id=event.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="button yes" type="submit" name="status" value="yes">Vou</button>
+      <button class="button no" type="submit" name="status" value="no">Não vou</button>
+    </form>
+    {% else %}<p class="muted"><a href="{{ url_for('auth.login') }}">Entre</a> para confirmar sua presença.</p>{% endif %}
+  </article>
+</div>
+{% if current_user.is_admin %}
+<section class="section-card" style="margin-top:35px">
+  <div class="page-heading"><div><div class="eyebrow">Área restrita</div><h2>Participantes confirmados</h2></div><a class="button-primary" href="{{ url_for('admin.edit_event', event_id=event.id) }}">Editar encontro</a></div>
+  <div class="admin-list">{% for rsvp in event.rsvps if rsvp.status == 'yes' %}<div class="admin-row"><strong>{{ rsvp.user.name }}</strong><small>{{ rsvp.user.email }}</small></div>{% else %}<p class="muted">Ainda não há confirmações.</p>{% endfor %}</div>
+  <div class="wheel-box" data-wheel data-names='{{ event.rsvps | selectattr("status", "equalto", "yes") | map(attribute="user.name") | list | tojson }}'><div class="wheel"></div><p>Sortear participante</p><button class="button button-primary" data-spin>Girar roleta</button><h3 data-winner>...</h3></div>
+</section>
+{% endif %}
+{% endblock %}

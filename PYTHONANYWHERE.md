@@ -8,6 +8,43 @@ Use exatamente os valores exibidos no painel.
 
 ## 2. Clonar e preparar o ambiente
 
+### Autenticação do GitHub
+
+Se aparecer:
+
+```text
+git@github.com: Permission denied (publickey).
+```
+
+o GitHub não recebeu uma chave SSH autorizada. A mensagem sobre a autenticidade de `github.com` é normal e não é a causa do erro.
+
+Para continuar rapidamente usando HTTPS, crie um **Personal Access Token** no GitHub com acesso de leitura ao repositório e execute:
+
+```bash
+git clone https://github.com/Mateus7Ribeiro/CalendarioMecenato.git
+```
+
+Quando solicitado, informe seu usuário do GitHub e use o token como senha. Não use a senha normal da conta. O token não deve ser colocado na URL nem commitado.
+
+Para continuar usando SSH, no Bash do PythonAnywhere execute:
+
+```bash
+ssh-keygen -t ed25519 -C "seu-email-do-github" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copie toda a linha exibida por `cat` e adicione-a no GitHub em **Settings > SSH and GPG keys > New SSH key**. Depois teste:
+
+```bash
+ssh -T git@github.com
+```
+
+Quando aparecer uma mensagem informando que a autenticação foi bem-sucedida, clone novamente:
+
+```bash
+git clone git@github.com:Mateus7Ribeiro/CalendarioMecenato.git
+```
+
 No console Bash do PythonAnywhere:
 
 ```bash
@@ -49,7 +86,21 @@ Com o ambiente virtual ativado:
 python scripts/init_db.py
 ```
 
-O script cria as tabelas e cria ou atualiza o usuário administrador indicado. Ele pode ser executado novamente sem duplicar esse usuário.
+O script cria as tabelas, cria o primeiro clube (`Clube Mecenato`) e cria ou atualiza o usuário administrador indicado. Ele pode ser executado novamente sem duplicar o clube ou o usuário.
+
+Para personalizar o clube:
+
+```bash
+python scripts/init_db.py --club-name "Nome do clube" --club-description "Descrição" --club-color "#e56b4f"
+```
+
+Se você já executou o script antes de esta correção, execute-o novamente no PythonAnywhere. Ele detectará que o usuário já existe e criará apenas o clube que está faltando:
+
+```bash
+cd ~/CalendarioMecenato
+source .venv/bin/activate
+python scripts/init_db.py
+```
 
 ## 5. Criar o Web app
 
@@ -65,7 +116,7 @@ No painel **Web**:
 import os
 import sys
 
-project_home = "/home/USUARIO/CalendarioMecenato"
+project_home = "/home/mecenato/CalendarioMecenato"
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 

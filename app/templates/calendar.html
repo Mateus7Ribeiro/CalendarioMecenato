@@ -1,9 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}Mecenato{% endblock %}
 {% block content %}
-<section class="page-heading"><div><div class="eyebrow">Temporada de leituras · 2026</div><h1>Encontros que ficam.</h1></div><a class="button-primary" href="{{ url_for('auth.register') }}">Participar do clube</a></section>
+<style>
+  .calendar-join{white-space:nowrap;text-align:center}
+  .club-memberships{display:none}
+  .club-membership{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--club-color)}
+  .club-membership strong{display:block;font-size:14px}.club-membership small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+  .club-membership .button{padding:8px 11px;font-size:12px;white-space:nowrap}.club-membership .leave{border:1px solid var(--line);background:transparent;color:var(--muted)}
+  @media(max-width:560px){.page-heading{display:block}.calendar-join{display:block;width:100%;margin-top:18px}.club-membership{align-items:flex-start}.club-membership .button{margin-top:2px}}
+</style>
+<section class="page-heading"><div><div class="eyebrow">Temporada de leituras · 2026</div><h1>Encontros que ficam.</h1></div>{% if not current_user.is_authenticated %}<a class="button-primary calendar-join" href="{{ url_for('auth.register') }}">Participar do clube</a>{% endif %}</section>
+{% if clubs %}<section class="club-memberships" aria-label="Clubes do grupo">{% for club in clubs %}<div class="club-membership" style="--club-color:{{ club.color_tag }}"><div><strong>{{ club.name }}</strong><small>{{ club.members|length }} participante{{ '' if club.members|length == 1 else 's' }}</small></div>{% if current_user.is_authenticated %}{% if club.id in member_club_ids %}<form method="post" action="{{ url_for('main.update_membership', club_id=club.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button leave" type="submit" name="action" value="leave">Deixar</button></form>{% else %}<form method="post" action="{{ url_for('main.update_membership', club_id=club.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button yes" type="submit" name="action" value="join">Participar</button></form>{% endif %}{% else %}<a class="button button-primary" href="{{ url_for('auth.register') }}">Participar</a>{% endif %}</div>{% endfor %}</section>{% endif %}
 <div class="calendar-layout"><section>
-  <div class="calendar-head"><h2>{{ month_label }} {{ year }}</h2><div class="month-switch"><a href="?month={{ previous_month }}" aria-label="Mês anterior">‹</a><a href="?month={{ selected }}">Hoje</a><a href="?month={{ next_month }}" aria-label="Próximo mês">›</a></div></div>
+  <div class="calendar-head"><h2>{{ month_label }} {{ year }}</h2><div class="month-switch"><a href="?month={{ previous_month }}" aria-label="Mês anterior">‹</a><a href="?month={{ current_month }}">Hoje</a><a href="?month={{ next_month }}" aria-label="Próximo mês">›</a></div></div>
   <div class="calendar-grid"><div class="weekday">Dom</div><div class="weekday">Seg</div><div class="weekday">Ter</div><div class="weekday">Qua</div><div class="weekday">Qui</div><div class="weekday">Sex</div><div class="weekday">Sáb</div>
     {% set first_weekday = (month_start.weekday() + 1) % 7 %}{% for _ in range(first_weekday) %}<div class="day"></div>{% endfor %}{% for day in range(1, days_in_month + 1) %}<div class="day {% if day == now.day and year == now.year and now.month == month_start.month %}today{% endif %}"><span class="day-number">{{ day }}</span>{% for event in event_days.get(day, []) %}<a class="event-mini" href="{{ url_for('main.event_detail', event_id=event.id) }}" style="--club-color:{{ event.club.color_tag }}"><strong>{{ event.book_title }}</strong><small>{{ event.event_date.strftime('%H:%M') }} · {{ event.club.name }}</small></a>{% endfor %}</div>{% endfor %}
   </div>

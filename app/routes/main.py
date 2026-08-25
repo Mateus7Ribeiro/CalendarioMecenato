@@ -5,7 +5,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, u
 from flask_login import current_user, login_required
 
 from app import db
-from app.models import Event, RSVP
+from app.models import Club, Event, RSVP
 
 
 main_bp = Blueprint("main", __name__)
@@ -38,7 +38,27 @@ def calendar():
     event_days = {}
     for event in events:
         event_days.setdefault(event.event_date.day, []).append(event)
-    return render_template("calendar.html", events=events, upcoming=upcoming, event_days=event_days, selected=month_start.strftime("%Y-%m"), month_label=MONTH_NAMES[month_start.month - 1], year=month_start.year, month_start=month_start, now=datetime.now(), days_in_month=monthrange(month_start.year, month_start.month)[1], previous_month=previous_month.strftime("%Y-%m"), next_month=next_month.strftime("%Y-%m"))
+    current_month = datetime.now().strftime("%Y-%m")
+    clubs = Club.query.order_by(Club.name).all()
+    member_club_ids = {club.id for club in current_user.clubs} if current_user.is_authenticated else set()
+    return render_template("calendar.html", events=events, upcoming=upcoming, event_days=event_days, clubs=clubs, member_club_ids=member_club_ids, selected=month_start.strftime("%Y-%m"), current_month=current_month, month_label=MONTH_NAMES[month_start.month - 1], year=month_start.year, month_start=month_start, now=datetime.now(), days_in_month=monthrange(month_start.year, month_start.month)[1], previous_month=previous_month.strftime("%Y-%m"), next_month=next_month.strftime("%Y-%m"))
+
+
+@main_bp.post("/clubs/<int:club_id>/membership")
+@login_required
+def update_membership(club_id):
+    club = db.get_or_404(Club, club_id)
+    action = request.form.get("action")
+    if action == "join" and club not in current_user.clubs:
+        current_user.clubs.append(club)
+        flash(f"Você entrou no {club.name}.", "success")
+    elif action == "leave" and club in current_user.clubs:
+        current_user.clubs.remove(club)
+        flash(f"Você deixou o {club.name}.", "success")
+    else:
+        abort(400)
+    db.session.commit()
+    return redirect(request.referrer or url_for("main.calendar"))
 
 
 @main_bp.route("/events/<int:event_id>")

@@ -48,6 +48,10 @@ def main():
             user.set_password(args.admin_password)
             db.session.commit()
             print(f"Admin provisioned: {user.email}")
+            if club not in user.clubs:
+                user.clubs.append(club)
+                db.session.commit()
+                print(f"Admin joined: {club.name}")
         else:
             print("Schema created. Set ADMIN_EMAIL and ADMIN_PASSWORD to provision an admin.")
 

@@ -6,6 +6,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db, login_manager
 
 
+club_members = db.Table(
+    "club_members",
+    db.Column("club_id", db.Integer, db.ForeignKey("clubs.id"), primary_key=True),
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column("joined_at", db.DateTime, default=datetime.utcnow, nullable=False),
+)
+
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -15,6 +23,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default="member")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     rsvps = db.relationship("RSVP", back_populates="user", cascade="all, delete-orphan")
+    clubs = db.relationship("Club", secondary=club_members, back_populates="members")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -34,6 +43,7 @@ class Club(db.Model):
     description = db.Column(db.Text, default="")
     color_tag = db.Column(db.String(7), nullable=False, default="#e56b4f")
     events = db.relationship("Event", back_populates="club", cascade="all, delete-orphan")
+    members = db.relationship("User", secondary=club_members, back_populates="clubs")
 
 
 class Event(db.Model):

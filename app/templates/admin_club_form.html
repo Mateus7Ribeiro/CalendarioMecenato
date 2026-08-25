@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<style>.color-field{display:flex;align-items:center;gap:10px}.color-field input{width:52px;height:42px;padding:3px}.color-field span{font-size:12px;color:var(--muted)}</style>
+<section class="form-card club-form-card"><div class="eyebrow">Área administrativa</div><h1>{{ title }}</h1><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="form-grid"><div class="field full"><label for="name">Nome do clube</label><input id="name" name="name" value="{{ club.name if club else '' }}" maxlength="120" required></div><div class="field full"><label for="description">Descrição</label><textarea id="description" name="description" maxlength="1000">{{ club.description if club else '' }}</textarea></div><div class="field"><label for="color_tag">Cor do clube</label><div class="color-field"><input id="color_tag" type="color" name="color_tag" value="{{ club.color_tag if club else '#e56b4f' }}" required><span>Usada para identificar eventos no calendário.</span></div></div></div><div class="form-actions"><button class="button button-primary" type="submit">Salvar clube</button><a href="{{ url_for('admin.clubs') }}">Cancelar</a></div></form></section>
+{% endblock %}

@@ -1,4 +1,5 @@
 from flask import Flask
+from sqlalchemy import inspect, text
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -33,10 +34,19 @@ def create_app(config_class=Config):
         from app.models import Club, Event, User
         if app.config["AUTO_CREATE_DB"]:
             db.create_all()
+        _ensure_user_active_column()
         if app.config["SEED_DEMO_DATA"]:
             _seed_demo_data(User, Club, Event)
 
     return app
+
+
+def _ensure_user_active_column():
+    """Add the account status column to databases created before this feature."""
+    columns = {column["name"] for column in inspect(db.engine).get_columns("users")}
+    if "active" not in columns:
+        with db.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE users ADD COLUMN active BOOLEAN NOT NULL DEFAULT 1"))
 
 
 def _seed_demo_data(User, Club, Event):

@@ -21,6 +21,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="member")
+    active = db.Column(db.Boolean, nullable=False, default=True, server_default="1")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     rsvps = db.relationship("RSVP", back_populates="user", cascade="all, delete-orphan")
     clubs = db.relationship("Club", secondary=club_members, back_populates="members")
@@ -33,7 +34,15 @@ class User(UserMixin, db.Model):
 
     @property
     def is_admin(self):
-        return self.role == "admin"
+        return self.role in {"admin", "superadmin"}
+
+    @property
+    def is_superadmin(self):
+        return self.role == "superadmin"
+
+    @property
+    def is_active(self):
+        return self.active
 
 
 class Club(db.Model):

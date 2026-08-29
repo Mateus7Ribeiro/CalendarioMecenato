@@ -22,6 +22,16 @@ def admin_required(view):
     return wrapped
 
 
+def superadmin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not current_user.is_superadmin:
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
 @admin_bp.route("/")
 @admin_required
 def dashboard():
@@ -72,7 +82,7 @@ def delete_club(club_id):
 
 
 @admin_bp.route("/users")
-@admin_required
+@superadmin_required
 def users():
     query = request.args.get("q", "").strip()
     users_query = User.query
@@ -80,29 +90,81 @@ def users():
         search = f"%{query}%"
         users_query = users_query.filter(or_(User.name.ilike(search), User.email.ilike(search)))
     found_users = users_query.order_by(User.name).all()
-    administrators = User.query.filter_by(role="admin").order_by(User.name).all()
-    return render_template("admin_users.html", users=found_users, administrators=administrators, query=query)
+    return render_template("admin_users.html", users=found_users, query=query)
 
 
-@admin_bp.post("/users/<int:user_id>/role")
-@admin_required
-def update_user_role(user_id):
+@admin_bp.route("/users/new", methods=["GET", "POST"])
+@superadmin_required
+def new_user():
+    if request.method == "POST":
+        if _save_user_from_form(User()):
+            flash("Usuário criado.", "success")
+            return redirect(url_for("admin.users"))
+    return render_template("admin_user_form.html", user=None, title="Novo usuário")
+
+
+@admin_bp.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
+@superadmin_required
+def edit_user(user_id):
     user = db.get_or_404(User, user_id)
-    role = request.form.get("role")
-    query = request.form.get("q", "")
-    if role not in {"admin", "member"}:
-        abort(400)
-    if role == "member" and user.is_admin:
-        if user.id == current_user.id:
-            flash("Você não pode remover seu próprio acesso de administrador.", "error")
-            return redirect(url_for("admin.users", q=query))
-        if User.query.filter_by(role="admin").count() <= 1:
-            flash("O grupo precisa manter pelo menos um administrador.", "error")
-            return redirect(url_for("admin.users", q=query))
-    user.role = role
+    if request.method == "POST":
+        if _save_user_from_form(user):
+            flash("Usuário atualizado.", "success")
+            return redirect(url_for("admin.users"))
+    return render_template("admin_user_form.html", user=user, title="Editar usuário")
+
+
+@admin_bp.post("/users/<int:user_id>/status")
+@superadmin_required
+def update_user_status(user_id):
+    user = db.get_or_404(User, user_id)
+    active = request.form.get("active") == "1"
+    if not active and user.id == current_user.id:
+        flash("Você não pode inativar sua própria conta.", "error")
+        return redirect(url_for("admin.users"))
+    if not active and user.is_superadmin and User.query.filter_by(role="superadmin", active=True).count() <= 1:
+        flash("O site precisa manter pelo menos um super administrador ativo.", "error")
+        return redirect(url_for("admin.users"))
+    user.active = active
     db.session.commit()
-    flash(f"Acesso de {user.name} atualizado.", "success")
-    return redirect(url_for("admin.users", q=query))
+    flash(f"Usuário {user.name} {'ativado' if active else 'inativado'}.", "success")
+    return redirect(url_for("admin.users"))
+
+
+def _save_user_from_form(user):
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").lower().strip()
+    password = request.form.get("password", "")
+    if not name or not email or (user.id is None and len(password) < 6):
+        flash("Informe nome, e-mail e uma senha com pelo menos 6 caracteres para novos usuários.", "error")
+        return False
+    duplicate = User.query.filter(User.email == email, User.id != user.id).first()
+    if duplicate:
+        flash("Este e-mail já está cadastrado.", "error")
+        return False
+    user.name = name
+    user.email = email
+    requested_role = request.form.get("role", "member")
+    if requested_role not in {"admin", "member"}:
+        abort(400)
+    if user.id != current_user.id and user.role != "superadmin":
+        user.role = requested_role
+    requested_active = request.form.get("active") == "1" if user.id is not None else True
+    if user.id == current_user.id and not requested_active:
+        flash("Você não pode inativar sua própria conta.", "error")
+        return False
+    if user.id != current_user.id and user.role == "superadmin" and not requested_active and User.query.filter_by(role="superadmin", active=True).count() <= 1:
+        flash("O site precisa manter pelo menos um super administrador ativo.", "error")
+        return False
+    user.active = requested_active
+    if password:
+        if len(password) < 6:
+            flash("A senha deve ter pelo menos 6 caracteres.", "error")
+            return False
+        user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return True
 
 
 @admin_bp.route("/events/new", methods=["GET", "POST"])

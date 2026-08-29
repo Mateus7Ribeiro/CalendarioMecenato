@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="form-card">
+  <div class="eyebrow">Super administração</div><h1>{{ title }}</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="field full"><label for="name">Nome</label><input id="name" name="name" value="{{ user.name if user else '' }}" maxlength="120" required></div>
+      <div class="field full"><label for="email">E-mail</label><input id="email" type="email" name="email" value="{{ user.email if user else '' }}" maxlength="255" required></div>
+      <div class="field"><label for="role">Perfil</label><select id="role" name="role" {% if user and user.is_superadmin %}disabled{% endif %}><option value="member" {% if not user or user.role == 'member' %}selected{% endif %}>Membro</option><option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Administrador</option>{% if user and user.is_superadmin %}<option selected>Super administrador</option>{% endif %}</select></div>
+      <div class="field"><label for="password">Senha {% if user %}<span class="muted">(opcional)</span>{% endif %}</label><input id="password" type="password" name="password" minlength="6" {% if not user %}required{% endif %}></div>
+      {% if user %}<label class="check full"><input type="checkbox" name="active" value="1" {% if user.active %}checked{% endif %}> Conta ativa</label>{% endif %}
+    </div>
+    <div class="form-actions"><button class="button button-primary" type="submit">Salvar usuário</button><a href="{{ url_for('admin.users') }}">Cancelar</a></div>
+  </form>
+</section>
+{% endblock %}
